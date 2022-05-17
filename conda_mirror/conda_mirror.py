@@ -1122,13 +1122,14 @@ def main(
     session = requests.Session()
     with tempfile.TemporaryDirectory(dir=temp_directory) as download_dir:
         logger.info("downloading to the tempdir %s", download_dir)
-        for package_name in tqdm(
-            sorted(to_mirror),
-            desc=platform,
-            unit="package",
-            leave=False,
-            disable=not show_progress,
-        ):
+        for package_name, package_counter in enumerate(
+            tqdm(
+                sorted(to_mirror),
+                desc=platform,
+                unit="package",
+                leave=False,
+                disable=not show_progress,
+        )):
             url = download_url.format(
                 channel=channel, platform=platform, file_name=package_name
             )
@@ -1169,43 +1170,14 @@ def main(
                 logger.exception("Unexpected error: %s. Aborting download.", ex)
                 break
 
-        # validate all packages in the download directory
-        validation_results = _validate_packages(
-            packages, download_dir, num_threads=num_threads
-        )
-        summary["validating-new"].update(validation_results)
-        logger.debug(
-            "Newly downloaded files at %s are %s",
-            download_dir,
-            pformat(os.listdir(download_dir)),
-        )
-
-        # 8. Use already downloaded repodata.json contents but prune it of
-        # packages we don't want
-        repodata = {"info": info, "packages": packages}
-
-        # compute the packages that we have locally
-        packages_we_have = set(local_packages + _list_conda_packages(download_dir))
-        # remake the packages dictionary with only the packages we have
-        # locally
-        repodata["packages"] = {
-            name: info
-            for name, info in repodata["packages"].items()
-            if name in packages_we_have
-        }
-        _write_repodata(download_dir, repodata)
-
-        # move new conda packages
-        for f in _list_conda_packages(download_dir):
-            old_path = os.path.join(download_dir, f)
-            new_path = os.path.join(local_directory, f)
-            logger.info("moving %s to %s", old_path, new_path)
-            shutil.move(old_path, new_path)
-
-        for f in ("repodata.json", "repodata.json.bz2"):
-            download_path = os.path.join(download_dir, f)
-            move_path = os.path.join(local_directory, f)
-            shutil.move(download_path, move_path)
+            if (package_counter+1) % 100 == 0:
+                # Every 100 packages, pause to validate and move packages
+                # If we dont do this then whenever an invocation is interrupted, nothing is saved.
+                # This serves as basically a checkpoint
+                _validate_and_move(packages, download_dir, num_threads, summary, info, local_packages, local_directory)
+    
+    # When finished with the loop, validate and move the remaining packages
+    _validate_and_move(packages, download_dir, num_threads, summary, info, local_packages, local_directory)
 
     # Also need to make a "noarch" channel or conda gets mad
     noarch_path = os.path.join(target_directory, "noarch")
@@ -1215,6 +1187,45 @@ def main(
         _write_repodata(noarch_path, noarch_repodata)
 
     return summary
+
+def _validate_and_move(packages, download_dir, num_threads, summary, info, local_packages, local_directory):
+    # validate all packages in the download directory
+    validation_results = _validate_packages(
+        packages, download_dir, num_threads=num_threads
+    )
+    summary["validating-new"].update(validation_results)
+    logger.debug(
+        "Newly downloaded files at %s are %s",
+        download_dir,
+        pformat(os.listdir(download_dir)),
+    )
+
+    # 8. Use already downloaded repodata.json contents but prune it of
+    # packages we don't want
+    repodata = {"info": info, "packages": packages}
+
+    # compute the packages that we have locally
+    packages_we_have = set(local_packages + _list_conda_packages(download_dir))
+    # remake the packages dictionary with only the packages we have
+    # locally
+    repodata["packages"] = {
+        name: info
+        for name, info in repodata["packages"].items()
+        if name in packages_we_have
+    }
+    _write_repodata(download_dir, repodata)
+
+    # move new conda packages
+    for f in _list_conda_packages(download_dir):
+        old_path = os.path.join(download_dir, f)
+        new_path = os.path.join(local_directory, f)
+        logger.info("moving %s to %s", old_path, new_path)
+        shutil.move(old_path, new_path)
+
+    for f in ("repodata.json", "repodata.json.bz2"):
+        download_path = os.path.join(download_dir, f)
+        move_path = os.path.join(local_directory, f)
+        shutil.move(download_path, move_path)
 
 
 def _write_repodata(package_dir, repodata_dict):
