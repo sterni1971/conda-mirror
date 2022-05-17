@@ -2,6 +2,7 @@ import argparse
 import bz2
 import fnmatch
 import hashlib
+import itertools
 import json
 import logging
 import multiprocessing
@@ -387,6 +388,13 @@ def _make_arg_parser():
         dest="show_progress",
         help="Do not display progress bars.",
     )
+    ap.add_argument(
+        "--max-packages",
+        action="store",
+        type=int,
+        dest="max_packages",
+        help="Limit the total number of packages downloaded",
+    )
     return ap
 
 
@@ -499,6 +507,7 @@ def _parse_and_format_args():
         "ssl_verify": args.ssl_verify,
         "max_retries": args.max_retries,
         "show_progress": args.show_progress,
+        "max_packages": args.max_packages,
     }
 
 
@@ -610,7 +619,12 @@ def get_repodata(channel, platform, proxies=None, ssl_verify=None):
         channel=channel, platform=platform, file_name="repodata.json"
     )
 
-    resp = requests.get(url, proxies=proxies, verify=ssl_verify).json()
+    resp = requests.get(url, proxies=proxies, verify=ssl_verify)
+    try:
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(f"platform {platform} for channel {channel} not found on anaconda.org")
+    resp = resp.json()
     info = resp.get("info", {})
     packages = resp.get("packages", {})
     # Patch the repodata.json so that all package info dicts contain a "subdir"
@@ -897,6 +911,7 @@ def main(
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     max_retries=100,
     show_progress: bool = True,
+    max_packages=None
 ):
     """
 
@@ -953,6 +968,9 @@ def main(
         default 100.
     show_progress: bool
         Show progress bar while downloading. True by default.
+    max_packages : int, optional
+        Maximum number of packages to mirror. If not set, will mirror all packages 
+        in list
 
     Returns
     -------
@@ -992,6 +1010,7 @@ def main(
      'size': 1960193,
      'version': '8.5.18'}
     """
+    logger.debug(f"Local values in main: {pformat(locals())}")
     # Steps:
     # 1. figure out blacklisted packages
     # 2. un-blacklist packages that are actually whitelisted
@@ -1083,6 +1102,8 @@ def main(
     # mirror list
     local_packages = _list_conda_packages(local_directory)
     to_mirror = possible_packages_to_mirror - set(local_packages)
+    if max_packages is not None:
+        to_mirror = set(itertools.islice(to_mirror, max_packages))
     logger.info("PACKAGES TO MIRROR")
     logger.info(pformat(sorted(to_mirror)))
     summary["to-mirror"].update(to_mirror)
