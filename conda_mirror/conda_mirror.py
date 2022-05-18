@@ -1122,7 +1122,7 @@ def main(
     session = requests.Session()
     with tempfile.TemporaryDirectory(dir=temp_directory) as download_dir:
         logger.info("downloading to the tempdir %s", download_dir)
-        for package_name, package_counter in enumerate(
+        for package_counter, package_name in enumerate(
             tqdm(
                 sorted(to_mirror),
                 desc=platform,
@@ -1170,14 +1170,16 @@ def main(
                 logger.exception("Unexpected error: %s. Aborting download.", ex)
                 break
 
-            if (package_counter+1) % 100 == 0:
+            if (package_counter+1) % 15 == 0:
                 # Every 100 packages, pause to validate and move packages
                 # If we dont do this then whenever an invocation is interrupted, nothing is saved.
                 # This serves as basically a checkpoint
                 _validate_and_move(packages, download_dir, num_threads, summary, info, local_packages, local_directory)
+                # After moving packages to their ultimate resting place, update the packages we have locally
+                local_packages = _list_conda_packages(local_directory)
     
-    # When finished with the loop, validate and move the remaining packages
-    _validate_and_move(packages, download_dir, num_threads, summary, info, local_packages, local_directory)
+        # When finished with the loop, validate and move the remaining packages
+        _validate_and_move(packages, download_dir, num_threads, summary, info, local_packages, local_directory)
 
     # Also need to make a "noarch" channel or conda gets mad
     noarch_path = os.path.join(target_directory, "noarch")
