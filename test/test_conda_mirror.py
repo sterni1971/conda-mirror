@@ -4,13 +4,11 @@ import itertools
 import json
 import os
 import sys
-
 from os.path import join
-
-from conda_mirror import conda_mirror
 
 import pytest
 
+from conda_mirror import conda_mirror
 
 anaconda_channel = "https://repo.continuum.io/pkgs/free"
 
@@ -27,7 +25,7 @@ def test_match(repodata):
     """Unit test for internal _match function."""
     repodata_info, repodata_packages = repodata["conda-forge"]
     matched = conda_mirror._match(repodata_packages, {"name": "jupyter"})
-    assert set([v["name"] for v in matched.values()]) == set(["jupyter"])
+    assert {v["name"] for v in matched.values()} == {"jupyter"}
 
     matched = conda_mirror._match(repodata_packages, {"name": "*"})
     assert len(matched) == len(repodata_packages)
@@ -43,10 +41,8 @@ def test_match(repodata):
 
 def test_restore_required_dependencies(repodata):
     """Unit tests for internal _restore_required_dependencies function."""
-    from conda_mirror.conda_mirror import (
-        _match,
-        _restore_required_dependencies as restore,
-    )
+    from conda_mirror.conda_mirror import _match
+    from conda_mirror.conda_mirror import _restore_required_dependencies as restore
 
     _, all_packages = repodata["conda-forge"]
     excluded = set(all_packages)
@@ -61,7 +57,7 @@ def test_restore_required_dependencies(repodata):
     required = set(list(conda_packages)[:1])  # just take the first match
     excluded2 = restore(all_packages, excluded - required, required)
     reincluded = excluded - excluded2
-    reincluded_names = set(all_packages.get(r).get("name") for r in reincluded)
+    reincluded_names = {all_packages.get(r).get("name") for r in reincluded}
 
     assert len(excluded) > len(reincluded) > 0
     assert "yaml" in reincluded_names
@@ -145,7 +141,7 @@ whitelist:
         assert f in os.listdir(os.path.join(f2.strpath, platform))
 
     # make sure that the repodata contains less than upstream since we prune it
-    with open(os.path.join(f2.strpath, platform, "repodata.json"), "r") as f:
+    with open(os.path.join(f2.strpath, platform, "repodata.json")) as f:
         disk_repodata = json.load(f)
     disk_info = disk_repodata.get("info", {})
     assert len(disk_info) == len(info)
@@ -163,7 +159,7 @@ def _write_bad_package(channel_dir, platform_name, pkg_name):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     with bz2.BZ2File(os.path.join(target_dir, pkg_name), "wb") as f:
-        f.write("This is a fake package".encode())
+        f.write(b"This is a fake package")
 
 
 def test_main(tmpdir, repodata):

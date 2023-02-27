@@ -101,12 +101,12 @@ example-conf.yaml:
 
 ```yaml
 blacklist:
-    - license: "*agpl*"
-    - license: None
-    - license: ""
+  - license: "*agpl*"
+  - license: None
+  - license: ""
 
 whitelist:
-    - name: system
+  - name: system
 ```
 
 `blacklist` removes package(s) that match the condition(s) listed from the
@@ -152,42 +152,46 @@ See implementation details in the `conda_mirror:match` function for more
 information.
 
 #### Common usage patterns
+
 ##### Mirror **only** one specific package
+
 If you wanted to match exactly the botocore package listed above with your
 config, then you could use the following configuration to first blacklist
 **all** packages and then include just the botocore packages:
 
 ```yaml
 blacklist:
-    - name: "*"
+  - name: "*"
 whitelist:
-    - name: botocore
-      version: 1.4.10
-      build: py34_0
+  - name: botocore
+    version: 1.4.10
+    build: py34_0
 ```
 
 you can use standard conda package version specifiers to filter a range of versions:
 
 ```yaml
 blacklist:
-    - name: "*"
+  - name: "*"
 whitelist:
-    - name: botocore
-      version: ">=1.4.10,<1.5"
+  - name: botocore
+    version: ">=1.4.10,<1.5"
 ```
 
 ##### Mirror everything but agpl licenses
+
 ```yaml
 blacklist:
-    - license: "*agpl*"
+  - license: "*agpl*"
 ```
 
 ##### Mirror only python 3 packages
+
 ```yaml
 blacklist:
-    - name: "*"
+  - name: "*"
 whitelist:
-    - build: "*py3*"
+  - build: "*py3*"
 ```
 
 ##### Mirror specified packages and their dependencies
@@ -198,7 +202,7 @@ dependencies (and likewise for dependencies of those packages).
 
 ```yaml
 blacklist:
-    - name: "*"
+  - name: "*"
 whitelist:
   - name: botocore
     version: ">=1.4.10"
@@ -258,7 +262,6 @@ TOTAL                            239     20    92%
 
 After a new contributor makes a pull-request that is approved, we will reach out
 and invite you to be a maintainer of the project.
-
 
 ## Releasing
 

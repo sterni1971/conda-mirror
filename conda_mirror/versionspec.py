@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2012 Anaconda, Inc
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -9,11 +8,10 @@
 # not part of the officially supported public API nor is it available in a package
 # that can be installed safely outside of the base environment.
 
-from logging import getLogger
 import operator as op
 import re
-
 from itertools import zip_longest
+from logging import getLogger
 
 log = getLogger(__name__)
 
@@ -22,7 +20,7 @@ version_split_re = re.compile("([0-9]+|[*]+|[^0-9*]+)")
 version_cache = {}
 
 
-class excepts(object):
+class excepts:
     def __init__(self, exc, func, handler=lambda exc: None):
         self.exc = exc
         self.func = func
@@ -48,12 +46,10 @@ class SingleStrArgCachingType(type):
             try:
                 return cls._cache_[arg]
             except KeyError:
-                val = cls._cache_[arg] = super(SingleStrArgCachingType, cls).__call__(
-                    arg
-                )
+                val = cls._cache_[arg] = super().__call__(arg)
                 return val
         else:
-            return super(SingleStrArgCachingType, cls).__call__(arg)
+            return super().__call__(arg)
 
 
 class VersionOrder(metaclass=SingleStrArgCachingType):
@@ -252,7 +248,7 @@ class VersionOrder(metaclass=SingleStrArgCachingType):
         return self.norm_version
 
     def __repr__(self):
-        return '%s("%s")' % (self.__class__.__name__, self)
+        return f'{self.__class__.__name__}("{self}")'
 
     def _eq(self, t1, t2):
         for v1, v2 in zip_longest(t1, t2, fillvalue=[]):
@@ -450,7 +446,7 @@ OPERATOR_MAP = {
 OPERATOR_START = frozenset(("=", "<", ">", "!", "~"))
 
 
-class BaseSpec(object):
+class BaseSpec:
     def __init__(self, spec_str, matcher, is_exact):
         self.spec_str = spec_str
         self._is_exact = is_exact
@@ -480,7 +476,7 @@ class BaseSpec(object):
         return self.spec
 
     def __repr__(self):
-        return "%s('%s')" % (self.__class__.__name__, self.spec)
+        return f"{self.__class__.__name__}('{self.spec}')"
 
     @property
     def raw_value(self):
@@ -519,7 +515,7 @@ class VersionSpec(
 
     def __init__(self, vspec):
         vspec_str, matcher, is_exact = self.get_matcher(vspec)
-        super(VersionSpec, self).__init__(vspec_str, matcher, is_exact)
+        super().__init__(vspec_str, matcher, is_exact)
 
     def get_matcher(self, vspec):
         if isinstance(vspec, str) and regex_split_re.match(vspec):
@@ -632,7 +628,7 @@ class BuildNumberMatch(
 
     def __init__(self, vspec):
         vspec_str, matcher, is_exact = self.get_matcher(vspec)
-        super(BuildNumberMatch, self).__init__(vspec_str, matcher, is_exact)
+        super().__init__(vspec_str, matcher, is_exact)
 
     def get_matcher(self, vspec):
         try:

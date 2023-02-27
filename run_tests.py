@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+
 import pytest
 
 if __name__ == "__main__":
@@ -7,7 +8,7 @@ if __name__ == "__main__":
     args = ["-v"]
     # show the message output for skipped and expected failure tests
     args.append("-rxs")
-    print("sys.argv={}".format(sys.argv))
+    print(f"sys.argv={sys.argv}")
     args.extend(sys.argv[1:])
     # call pytest and exit with the return code from pytest so that
     # travis will fail correctly if tests fail

@@ -1,15 +1,15 @@
 **Implemented enhancements:**
 
-* <news item>
+- <news item>
 
 **Fixed bugs:**
 
-* <news item>
+- <news item>
 
 **Closed issues:**
 
-* <news item>
+- <news item>
 
 **Merged pull requests:**
 
-* <news item>
+- <news item>

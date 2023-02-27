@@ -1,15 +1,14 @@
-import os
-import sys
 import json
+import os
+import pathlib
 import shutil
+import sys
 import tempfile
 from os.path import isfile, join
-import pathlib
 
 import pytest
 
 import conda_mirror.diff_tar as dt
-
 
 EMPTY_MD5 = "d41d8cd98f00b204e9800998ecf8427e"
 
@@ -152,8 +151,8 @@ def test_cli_reference_outfile(tmpdir):
     assert isfile(dt.DEFAULT_REFERENCE_PATH)
     run_with_args(["--reference", "--outfile", target_path, dt.mirror_dir])
     assert isfile(target_path)
-    with open(dt.DEFAULT_REFERENCE_PATH, "r") as ref1:
-        with open(target_path, "r") as ref2:
+    with open(dt.DEFAULT_REFERENCE_PATH) as ref1:
+        with open(target_path) as ref2:
             assert ref1.readlines() == ref2.readlines()
 
 
