@@ -383,6 +383,13 @@ def _make_arg_parser():
         dest="max_retries",
     )
     ap.add_argument(
+        "--timeout",
+        help=("Connection and read timeout in seconds, " "defaults to 360"),
+        type=int,
+        default=360,
+        dest="con_timeout",
+    )
+    ap.add_argument(
         "--no-progress",
         action="store_false",
         dest="show_progress",
@@ -502,6 +509,7 @@ def _parse_and_format_args():
         "proxies": proxies,
         "ssl_verify": args.ssl_verify,
         "max_retries": args.max_retries,
+        "con_timeout": args.con_timeout,
         "show_progress": args.show_progress,
     }
 
@@ -636,6 +644,7 @@ def _download(
     ssl_verify=None,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     show_progress=False,
+    con_timeout=360,
 ):
     """Download `url` to `target_directory`
 
@@ -666,7 +675,9 @@ def _download(
     download_filename = os.path.join(target_directory, target_filename)
     logger.debug("downloading to %s", download_filename)
     with open(download_filename, "w+b") as tf:
-        ret = session.get(url, stream=True, proxies=proxies, verify=ssl_verify)
+        ret = session.get(
+            url, stream=True, proxies=proxies, verify=ssl_verify, timeout=con_timeout
+        )
         size = int(ret.headers.get("Content-Length", 0))
         progress = tqdm(
             desc=target_filename,
@@ -694,6 +705,7 @@ def _download_backoff_retry(
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     max_retries: int = 100,
     show_progress=True,
+    con_timeout=360,
 ):
     """Download `url` to `target_directory` with exponential backoff in the
     event of failure.
@@ -738,6 +750,7 @@ def _download_backoff_retry(
                 ssl_verify=ssl_verify,
                 chunk_size=chunk_size,
                 show_progress=show_progress,
+                con_timeout=con_timeout,
             )
             break
         except Exception:
@@ -906,6 +919,7 @@ def main(
     ssl_verify=None,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     max_retries=100,
+    con_timeout=360,
     show_progress: bool = True,
 ):
     """
@@ -1140,6 +1154,7 @@ def main(
                     chunk_size=chunk_size,
                     max_retries=max_retries,
                     show_progress=show_progress,
+                    con_timeout=con_timeout,
                 )
 
                 # make sure we have enough free disk space in the target folder to meet threshold
