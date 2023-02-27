@@ -2,6 +2,7 @@ import argparse
 import bz2
 import fnmatch
 import hashlib
+import itertools
 import json
 import logging
 import multiprocessing
@@ -395,6 +396,13 @@ def _make_arg_parser():
         dest="show_progress",
         help="Do not display progress bars.",
     )
+    ap.add_argument(
+        "--max-packages",
+        action="store",
+        type=int,
+        dest="max_packages",
+        help="Limit the total number of packages downloaded",
+    )
     return ap
 
 
@@ -511,6 +519,7 @@ def _parse_and_format_args():
         "max_retries": args.max_retries,
         "con_timeout": args.con_timeout,
         "show_progress": args.show_progress,
+        "max_packages": args.max_packages,
     }
 
 
@@ -622,7 +631,14 @@ def get_repodata(channel, platform, proxies=None, ssl_verify=None):
         channel=channel, platform=platform, file_name="repodata.json"
     )
 
-    resp = requests.get(url, proxies=proxies, verify=ssl_verify).json()
+    resp = requests.get(url, proxies=proxies, verify=ssl_verify)
+    try:
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"platform {platform} for channel {channel} not found on anaconda.org"
+        )
+    resp = resp.json()
     info = resp.get("info", {})
     packages = resp.get("packages", {})
     packages.update(resp.get("packages.conda", {}))
@@ -921,6 +937,7 @@ def main(
     max_retries=100,
     con_timeout=360,
     show_progress: bool = True,
+    max_packages=None,
 ):
     """
 
@@ -977,6 +994,9 @@ def main(
         default 100.
     show_progress: bool
         Show progress bar while downloading. True by default.
+    max_packages : int, optional
+        Maximum number of packages to mirror. If not set, will mirror all packages
+        in list
 
     Returns
     -------
@@ -1016,6 +1036,7 @@ def main(
      'size': 1960193,
      'version': '8.5.18'}
     """
+    logger.debug(f"Local values in main: {pformat(locals())}")
     # Steps:
     # 1. figure out blacklisted packages
     # 2. un-blacklist packages that are actually whitelisted
@@ -1107,6 +1128,8 @@ def main(
     # mirror list
     local_packages = _list_conda_packages(local_directory)
     to_mirror = possible_packages_to_mirror - set(local_packages)
+    if max_packages is not None:
+        to_mirror = set(itertools.islice(to_mirror, max_packages))
     logger.info("PACKAGES TO MIRROR")
     logger.info(pformat(sorted(to_mirror)))
     summary["to-mirror"].update(to_mirror)
@@ -1125,12 +1148,14 @@ def main(
     session = requests.Session()
     with tempfile.TemporaryDirectory(dir=temp_directory) as download_dir:
         logger.info("downloading to the tempdir %s", download_dir)
-        for package_name in tqdm(
-            sorted(to_mirror),
-            desc=platform,
-            unit="package",
-            leave=False,
-            disable=not show_progress,
+        for package_counter, package_name in enumerate(
+            tqdm(
+                sorted(to_mirror),
+                desc=platform,
+                unit="package",
+                leave=False,
+                disable=not show_progress,
+            )
         ):
             url = download_url.format(
                 channel=channel, platform=platform, file_name=package_name
@@ -1173,43 +1198,33 @@ def main(
                 logger.exception("Unexpected error: %s. Aborting download.", ex)
                 break
 
-        # validate all packages in the download directory
-        validation_results = _validate_packages(
-            packages, download_dir, num_threads=num_threads
-        )
-        summary["validating-new"].update(validation_results)
-        logger.debug(
-            "Newly downloaded files at %s are %s",
+            if (package_counter + 1) % 15 == 0:
+                # Every 100 packages, pause to validate and move packages
+                # If we dont do this then whenever an invocation is interrupted, nothing is saved.
+                # This serves as basically a checkpoint
+                _validate_and_move(
+                    packages,
+                    download_dir,
+                    num_threads,
+                    summary,
+                    info,
+                    local_packages,
+                    local_directory,
+                )
+                # After moving packages to their ultimate resting place,
+                # update the packages we have locally
+                local_packages = _list_conda_packages(local_directory)
+
+        # When finished with the loop, validate and move the remaining packages
+        _validate_and_move(
+            packages,
             download_dir,
-            pformat(os.listdir(download_dir)),
+            num_threads,
+            summary,
+            info,
+            local_packages,
+            local_directory,
         )
-
-        # 8. Use already downloaded repodata.json contents but prune it of
-        # packages we don't want
-        repodata = {"info": info, "packages": packages}
-
-        # compute the packages that we have locally
-        packages_we_have = set(local_packages + _list_conda_packages(download_dir))
-        # remake the packages dictionary with only the packages we have
-        # locally
-        repodata["packages"] = {
-            name: info
-            for name, info in repodata["packages"].items()
-            if name in packages_we_have
-        }
-        _write_repodata(download_dir, repodata)
-
-        # move new conda packages
-        for f in _list_conda_packages(download_dir):
-            old_path = os.path.join(download_dir, f)
-            new_path = os.path.join(local_directory, f)
-            logger.info("moving %s to %s", old_path, new_path)
-            shutil.move(old_path, new_path)
-
-        for f in ("repodata.json", "repodata.json.bz2"):
-            download_path = os.path.join(download_dir, f)
-            move_path = os.path.join(local_directory, f)
-            shutil.move(download_path, move_path)
 
     # Also need to make a "noarch" channel or conda gets mad
     noarch_path = os.path.join(target_directory, "noarch")
@@ -1219,6 +1234,48 @@ def main(
         _write_repodata(noarch_path, noarch_repodata)
 
     return summary
+
+
+def _validate_and_move(
+    packages, download_dir, num_threads, summary, info, local_packages, local_directory
+):
+    # validate all packages in the download directory
+    validation_results = _validate_packages(
+        packages, download_dir, num_threads=num_threads
+    )
+    summary["validating-new"].update(validation_results)
+    logger.debug(
+        "Newly downloaded files at %s are %s",
+        download_dir,
+        pformat(os.listdir(download_dir)),
+    )
+
+    # 8. Use already downloaded repodata.json contents but prune it of
+    # packages we don't want
+    repodata = {"info": info, "packages": packages}
+
+    # compute the packages that we have locally
+    packages_we_have = set(local_packages + _list_conda_packages(download_dir))
+    # remake the packages dictionary with only the packages we have
+    # locally
+    repodata["packages"] = {
+        name: info
+        for name, info in repodata["packages"].items()
+        if name in packages_we_have
+    }
+    _write_repodata(download_dir, repodata)
+
+    # move new conda packages
+    for f in _list_conda_packages(download_dir):
+        old_path = os.path.join(download_dir, f)
+        new_path = os.path.join(local_directory, f)
+        logger.info("moving %s to %s", old_path, new_path)
+        shutil.move(old_path, new_path)
+
+    for f in ("repodata.json", "repodata.json.bz2"):
+        download_path = os.path.join(download_dir, f)
+        move_path = os.path.join(local_directory, f)
+        shutil.move(download_path, move_path)
 
 
 def _write_repodata(package_dir, repodata_dict):
