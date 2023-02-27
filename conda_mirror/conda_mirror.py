@@ -8,19 +8,18 @@ import logging
 import multiprocessing
 import os
 import pdb
+import random
 import re
 import shutil
 import sys
 import tarfile
 import tempfile
 import time
-import random
 from pprint import pformat
 from typing import Any, Callable, Dict, Set, Union
 
 import requests
 import yaml
-
 from tqdm import tqdm
 
 try:
@@ -200,7 +199,7 @@ def _restore_required_dependencies(
 
     # TODO - support platform-specific + noarch
 
-    already_required = set(all_packages.get(r, {}).get("name") for r in required)
+    already_required = {all_packages.get(r, {}).get("name") for r in required}
 
     final_excluded: Set[str] = set(excluded)
 
@@ -454,7 +453,7 @@ def _parse_and_format_args():
     config_dict = {}
     if args.config:
         logger.info("Loading config from %s", args.config)
-        with open(args.config, "r") as f:
+        with open(args.config) as f:
             config_dict = yaml.safe_load(f)
         logger.info("config: %s", config_dict)
 
@@ -500,7 +499,7 @@ def _parse_and_format_args():
         if len(url) > 1:
             url = ":".join(url)
         else:
-            url = "{}:{}".format(scheme, url[0])
+            url = f"{scheme}:{url[0]}"
         proxies = {scheme: url}
     return {
         "upstream_channel": args.upstream_channel,
@@ -544,7 +543,7 @@ def _remove_package(pkg_path, reason):
     reason : str
         The reason why the package is being removed
     """
-    msg = "Removing: %s. Reason: %s" % (pkg_path, reason)
+    msg = f"Removing: {pkg_path}. Reason: {reason}"
     if logger:
         logger.warning(msg)
     else:
@@ -771,9 +770,7 @@ def _download_backoff_retry(
             break
         except Exception:
             if c < max_retries:
-                logger.debug(
-                    "downloading failed, retrying {0}/{1}".format(c, max_retries)
-                )
+                logger.debug(f"downloading failed, retrying {c}/{max_retries}")
                 time.sleep(delay * random.randint(0, two_c - 1))
             else:
                 raise
@@ -906,7 +903,7 @@ def _validate_or_remove_package(args):
         return _remove_package(package_path, reason=reason)
     # validate the integrity of the package, the size of the package and
     # its hashes
-    log_msg = "Validating {:4d} of {:4d}: {}.".format(num + 1, num_packages, package)
+    log_msg = f"Validating {num + 1:4d} of {num_packages:4d}: {package}."
     if logger:
         logger.info(log_msg)
     else:

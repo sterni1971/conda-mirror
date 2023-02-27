@@ -4,13 +4,12 @@ differential tarballs of a (usually mirrored) conda repository.  The resulting
 tarball can be used to update a copy of the mirror on a remote (air-gapped)
 system, without having to copy the entire conda repository.
 """
+import hashlib
+import json
 import os
 import sys
-import json
-import hashlib
 import tarfile
 from os.path import abspath, isdir, join, relpath
-
 
 DEFAULT_REFERENCE_PATH = "./reference.json"
 DEFAULT_UPDATE_PATH = "./update.tar"
