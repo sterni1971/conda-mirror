@@ -386,10 +386,10 @@ def _make_arg_parser():
         "--timeout",
         help=(
             "Connection and read timeout in seconds, "
-            "defaults to 10"
+            "defaults to 360"
         ),
         type=int,
-        default=10,
+        default=360,
         dest="con_timeout",
     )
     ap.add_argument(
@@ -647,7 +647,7 @@ def _download(
     ssl_verify=None,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     show_progress=False,
-    con_timeout=10
+    con_timeout=360
 ):
     """Download `url` to `target_directory`
 
@@ -706,7 +706,7 @@ def _download_backoff_retry(
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     max_retries: int = 100,
     show_progress=True,
-    con_timeout = 10
+    con_timeout = 360
 ):
     """Download `url` to `target_directory` with exponential backoff in the
     event of failure.
@@ -920,7 +920,7 @@ def main(
     ssl_verify=None,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     max_retries=100,
-    con_timeout=10,
+    con_timeout=360,
     show_progress: bool = True,
 ):
     """
