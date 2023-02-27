@@ -1211,7 +1211,8 @@ def main(
                     local_packages,
                     local_directory,
                 )
-                # After moving packages to their ultimate resting place, update the packages we have locally
+                # After moving packages to their ultimate resting place,
+                # update the packages we have locally
                 local_packages = _list_conda_packages(local_directory)
 
         # When finished with the loop, validate and move the remaining packages
