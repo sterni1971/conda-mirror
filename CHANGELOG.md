@@ -6,11 +6,28 @@
 
 **Implemented enhancements:**
 
-- tba
+- Add timeout parameter to requests.Session.get to prevent hangs
+  [\#65](https://github.com/conda-incubator/conda-mirror/pull/65)
+- Add checkpointing and a "max packages to download" flag to CLI
+  [\#58](https://github.com/conda-incubator/conda-mirror/pull/58)
+
+**Fixed bugs:**
+
+- --version should not include log output
+  [\#47](https://github.com/conda-incubator/conda-mirror/issues/47)
+- --dry-run should imply more verbosity
+  [\#44](https://github.com/conda-incubator/conda-mirror/issues/44)
+- Add 'noarch' to default platform list
+  [\#31](https://github.com/conda-incubator/conda-mirror/issues/31)
+- --dry-run creates target directory
+  [\#27](https://github.com/conda-incubator/conda-mirror/issues/27)
 
 **Contributors:**
 
-- tba
+- Christopher Barber
+- Eric Dill
+- Gert Mertes
+- Uwe L. Korn
 
 ## [0.9.0](https://github.com/regro/conda-mirror/tree/0.9.0) (2023-01-13)
 
