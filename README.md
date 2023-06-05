@@ -89,7 +89,7 @@ optional arguments:
 
 ## Example Usage
 
-WARNING: Invoking this command will pull ~10GB and take at least an hour
+WARNING: Invoking this command will pull ~10TB and take at least an hour
 
 `conda-mirror --upstream-channel conda-forge --target-directory local_mirror --platform linux-64`
 
