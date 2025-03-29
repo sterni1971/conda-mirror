@@ -1,279 +1,165 @@
+<div align="center">
+
+[![License][license-badge]](LICENSE)
+[![CI Status][ci-badge]][ci]
+[![Conda Platform][conda-badge]][conda-url]
+[![Conda Downloads][conda-downloads-badge]][conda-url]
+[![Project Chat][chat-badge]][chat-url]
+[![Pixi Badge][pixi-badge]][pixi-url]
+
+[license-badge]: https://img.shields.io/github/license/conda-incubator/conda-mirror?style=flat-square
+[ci-badge]: https://img.shields.io/github/actions/workflow/status/conda-incubator/conda-mirror/ci.yml?style=flat-square&branch=main
+[ci]: https://github.com/conda-incubator/conda-mirror/actions/
+[conda-badge]: https://img.shields.io/conda/vn/conda-forge/conda-mirror?style=flat-square
+[conda-downloads-badge]: https://img.shields.io/conda/dn/conda-forge/conda-mirror?style=flat-square
+[conda-url]: https://prefix.dev/channels/conda-forge/packages/conda-mirror
+[chat-badge]: https://img.shields.io/discord/1082332781146800168.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square
+[chat-url]: https://discord.gg/kKV8ZxyzY4
+[pixi-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json&style=flat-square
+[pixi-url]: https://pixi.sh
+
+</div>
+
 # conda-mirror
 
-[![Build Status](https://travis-ci.org/regro/conda-mirror.svg?branch=master)](https://travis-ci.org/regro/conda-mirror)
-[![PyPI version](https://badge.fury.io/py/conda-mirror.svg)](https://badge.fury.io/py/conda-mirror)
-[![codecov](https://codecov.io/gh/regro/conda-mirror/branch/master/graph/badge.svg)](https://codecov.io/gh/regro/conda-mirror)
+Mirror conda channels
 
-Mirrors an upstream conda channel to a local directory.
+## 🗂 Table of Contents
 
-## Install
+- [Introduction](#-introduction)
+- [Installation](#-installation)
+- [Usage](#-usage)
 
-`conda-mirror` is available on PyPI and conda-forge.
+## 📖 Introduction
 
-Install with:
+This tool allows you to mirror conda channels to different backends using parallelism.
+You can also specify custom whitelists or blacklists if you only want to include certain kinds of packages.
 
-`pip install conda-mirror`
+## 💿 Installation
 
-or:
-
-`conda install conda-mirror -c conda-forge`
-
-## Compatibility
-
-`conda-mirror` is intentionally a py3 only package
-
-## CLI
-
-CLI interface for `conda-mirror.py`
-
-```
-usage: conda-mirror [-h] [--upstream-channel UPSTREAM_CHANNEL]
-                    [--target-directory TARGET_DIRECTORY]
-                    [--temp-directory TEMP_DIRECTORY] [--platform PLATFORM]
-                    [-D] [-v] [--config CONFIG] [--pdb]
-                    [--num-threads NUM_THREADS] [--version] [--dry-run]
-                    [--no-validate-target]
-                    [--minimum-free-space MINIMUM_FREE_SPACE] [--proxy PROXY]
-                    [--ssl-verify SSL_VERIFY] [-k]
-                    [--max-retries MAX_RETRIES] [--no-progress]
-
-CLI interface for conda-mirror.py
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --upstream-channel UPSTREAM_CHANNEL
-                        The target channel to mirror. Can be a channel on
-                        anaconda.org like "conda-forge" or a full qualified
-                        channel like "https://repo.continuum.io/pkgs/free/"
-  --target-directory TARGET_DIRECTORY
-                        The place where packages should be mirrored to
-  --temp-directory TEMP_DIRECTORY
-                        Temporary download location for the packages.
-                        Defaults to a randomly selected temporary directory.
-                        Note that you might need to specify a different
-                        location if your default temp directory has less
-                        available space than your mirroring target
-  --platform PLATFORM   The OS platform(s) to mirror. one of: {'linux-64',
-                        'linux-32','osx-64', 'win-32', 'win-64'}
-  -D, --include-depends
-                        Include packages matching any dependencies of
-                        packages in whitelist.
-  -v, --verbose         logging defaults to error/exception only. Takes up to
-                        three '-v' flags. '-v': warning. '-vv': info. '-vvv':
-                        debug.
-  --config CONFIG       Path to the yaml config file
-  --pdb                 Enable PDB debugging on exception
-  --num-threads NUM_THREADS
-                        Num of threads for validation. 1: Serial mode. 0: All
-                        available.
-  --version             Print version and quit
-  --dry-run             Show what will be downloaded and what will be
-                        removed. Will not validate existing packages
-  --no-validate-target  Skip validation of files already present in target-
-                        directory
-  --minimum-free-space MINIMUM_FREE_SPACE
-                        Threshold for free diskspace. Given in megabytes.
-  --proxy PROXY         Proxy URL to access internet if needed
-  --ssl-verify SSL_VERIFY, --ssl_verify SSL_VERIFY
-                        Path to a CA_BUNDLE file with certificates of trusted
-                        CAs, this may be "False" to disable verification as
-                        per the requests API.
-  -k, --insecure        Allow conda to perform "insecure" SSL connections and
-                        transfers. Equivalent to setting 'ssl_verify' to
-                        'false'.
-  --max-retries MAX_RETRIES
-                        Maximum number of retries before a download error is
-                        reraised, defaults to 100
-  --no-progress         Do not display progress bars.
-```
-
-## Example Usage
-
-WARNING: Invoking this command will pull ~10TB and take at least an hour
-
-`conda-mirror --upstream-channel conda-forge --target-directory local_mirror --platform linux-64`
-
-## More Details
-
-### blacklist/whitelist configuration
-
-example-conf.yaml:
-
-```yaml
-blacklist:
-  - license: "*agpl*"
-  - license: None
-  - license: ""
-
-whitelist:
-  - name: system
-```
-
-`blacklist` removes package(s) that match the condition(s) listed from the
-upstream repodata.
-
-`whitelist` re-includes any package(s) from blacklist that match the
-whitelist conditions.
-
-blacklist and whitelist both take lists of dictionaries. The keys in the
-dictionary need to be values in the `repodata.json` metadata. The values are
-(unix) globs to match on, but in the case of the `version` attribute,
-[conda package match version specifications](https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications)
-may also be used.
-
-Go here for the full repodata of the upstream
-"defaults" channel:
-http://conda.anaconda.org/anaconda/linux-64/repodata.json
-
-Here are the contents of one of the entries in repodata['packages']
-
-```python
-{'botocore-1.4.10-py34_0.tar.bz2': {'arch': 'x86_64',
-  'binstar': {'channel': 'main',
-   'owner_id': '55fc8527d3234d09d4951c71',
-   'package_id': '56b88ea1be1cc95a362b218e'},
-  'build': 'py34_0',
-  'build_number': 0,
-  'date': '2016-04-11',
-  'depends': ['docutils >=0.10',
-   'jmespath >=0.7.1,<1.0.0',
-   'python 3.4*',
-   'python-dateutil >=2.1,<3.0.0'],
-  'license': 'Apache',
-  'md5': 'b35a5c1240ba672e0d9d1296141e383c',
-  'name': 'botocore',
-  'platform': 'linux',
-  'requires': [],
-  'size': 1831799,
-  'version': '1.4.10'}}
-```
-
-See implementation details in the `conda_mirror:match` function for more
-information.
-
-#### Common usage patterns
-
-##### Mirror **only** one specific package
-
-If you wanted to match exactly the botocore package listed above with your
-config, then you could use the following configuration to first blacklist
-**all** packages and then include just the botocore packages:
-
-```yaml
-blacklist:
-  - name: "*"
-whitelist:
-  - name: botocore
-    version: 1.4.10
-    build: py34_0
-```
-
-you can use standard conda package version specifiers to filter a range of versions:
-
-```yaml
-blacklist:
-  - name: "*"
-whitelist:
-  - name: botocore
-    version: ">=1.4.10,<1.5"
-```
-
-##### Mirror everything but agpl licenses
-
-```yaml
-blacklist:
-  - license: "*agpl*"
-```
-
-##### Mirror only python 3 packages
-
-```yaml
-blacklist:
-  - name: "*"
-whitelist:
-  - build: "*py3*"
-```
-
-##### Mirror specified packages and their dependencies
-
-This will include all instances of botocore with at least
-version 1.4.10 along with any packages that match its
-dependencies (and likewise for dependencies of those packages).
-
-```yaml
-blacklist:
-  - name: "*"
-whitelist:
-  - name: botocore
-    version: ">=1.4.10"
-include_depends: True
-```
-
-If this includes too many packages versions, you can add additional
-entries to the whitelist to limit what will be included.
-
-## Testing
-
-### Install test requirements
-
-Note: Will install packages from pip
-
-```
-$ pip install -r test-requirements.txt
-Requirement already satisfied: pytest in /home/edill/miniconda/lib/python3.5/site-packages (from -r test-requirements.txt (line 1))
-Requirement already satisfied: coverage in /home/edill/miniconda/lib/python3.5/site-packages (from -r test-requirements.txt (line 2))
-Requirement already satisfied: pytest-ordering in /home/edill/miniconda/lib/python3.5/site-packages (from -r test-requirements.txt (line 3))
-Requirement already satisfied: py>=1.4.29 in /home/edill/miniconda/lib/python3.5/site-packages (from pytest->-r test-requirements.txt (line 1))
-```
-
-### Run the tests, invoking with the `coverage` tool.
-
-```
-$ coverage run run_tests.py
-sys.argv=['run_tests.py']
-========================================= test session starts ==========================================
-platform linux -- Python 3.5.3, pytest-3.0.6, py-1.4.31, pluggy-0.4.0 -- /home/edill/miniconda/bin/python
-cachedir: .cache
-rootdir: /home/edill/dev/maxpoint/github/conda-mirror, inifile:
-plugins: xonsh-0.5.2, ordering-0.4
-collected 4 items
-
-test/test_conda_mirror.py::test_match PASSED
-test/test_conda_mirror.py::test_cli[https://repo.continuum.io/pkgs/free-linux-64] PASSED
-test/test_conda_mirror.py::test_cli[conda-forge-linux-64] PASSED
-test/test_conda_mirror.py::test_handling_bad_package PASSED
-
-======================================= 4 passed in 4.41 seconds =======================================
-```
-
-### Show the coverage statistics
-
-```
-$ coverage report -m
-Name                           Stmts   Miss  Cover   Missing
-------------------------------------------------------------
-conda_mirror/__init__.py           3      0   100%
-conda_mirror/conda_mirror.py     236     20    92%   203-205, 209-210, 214, 240, 249-254, 262-264, 303, 366, 497, 542-543, 629
-------------------------------------------------------------
-TOTAL                            239     20    92%
-```
-
-## Other
-
-After a new contributor makes a pull-request that is approved, we will reach out
-and invite you to be a maintainer of the project.
-
-## Releasing
-
-To release you need three things
-
-1. Commit rights to conda-mirror
-2. A github token
-3. The version number that you want to use for the new tag
-
-After you have all three of these things, run the release.sh script (on a unix machine) and
-pass it the tag that you want to use and your github token:
+You can install `conda-mirror` using `pixi`:
 
 ```bash
-GITHUB_TOKEN=<github_token> ./release.sh <tag>
+pixi global install conda-mirror
 ```
+
+Or using `cargo`:
+
+```bash
+cargo install --locked --git https://github.com/conda-incubator/conda-mirror.git
+```
+
+Or by downloading our pre-built binaries from the [releases page](https://github.com/conda-incubator/conda-mirror/releases).
+
+Instead of installing `conda-mirror` globally, you can also use [`pixi exec`](https://pixi.sh/latest/reference/cli/pixi/exec/) to run `conda-mirror` in a temporary environment:
+
+```bash
+pixi exec conda-mirror --source robostack --destination ./robostack
+```
+
+## 🎯 Usage
+
+### CLI
+
+You can mirror conda channels using
+
+```bash
+conda-mirror --source conda-forge --destination ./conda-forge
+```
+
+#### Subdirs
+
+If you only want to mirror certain subdirs, you can do so using the `--subdir` flag:
+
+```bash
+conda-mirror --source robostack --destination ./robostack --subdir linux-64 --subdir linux-aarch64
+```
+
+#### Supported backends
+
+You can mirror from multiple source backends, namely:
+
+- filesystem: `--source ./conda-forge-local`
+- http(s): `--source conda-forge` or `--source https://prefix.dev/conda-forge`
+- oci: `--source oci://ghcr.io/channel-mirrors/conda-forge`
+- s3: `--source s3://my-source-bucket/channel`
+
+For mirroring authenticated channel, `conda-mirror` uses pixi's authentication.
+See the [official documentation](https://pixi.sh/latest/deployment/authentication/#authentication) for more information.
+
+You can mirror to multiple destination backends as well, namely:
+
+- filesystem: `--destination ./conda-forge-local`
+- s3: `--destination s3://my-destination-bucket/channel`
+
+#### Configuration file
+
+For more control like including only specific packages, you can use a configuration file and pass them to `conda-mirror` using `--config my-config.yml`.
+
+Mirror all packages except a specific blacklist:
+
+```yml
+source: conda-forge
+destination: ./my-channel
+
+exclude:
+  - name: jupyter
+    version: ">=0.5.0" # optional
+  - license: AGPL-3.0-or-later
+```
+
+Only mirror whitelisted packages:
+
+```yml
+source: conda-forge
+destination: ./my-channel
+
+include:
+  - name: jupyter* # you can use globs here
+```
+
+Exclude all packages defined in `exclude`, override this behavior by specifying overrides in `include`:
+
+```yml
+source: conda-forge
+destination: ./my-channel
+
+include:
+  - name: jupyter-ai
+exclude:
+  - name: jupyter* # you can use globs here
+```
+
+Only mirror certain subdirs:
+
+```yml
+source: conda-forge
+destination: ./my-channel
+subdirs:
+  - linux-64
+  - osx-arm64
+  - noarch
+  - win-64
+```
+
+#### S3 configuration
+
+When using S3, you need to configure the S3 endpoint by setting the region, endpoint url, and whether to use path-style addressing.
+You can either set these by using the appropriate CLI flags or by using a configuration file.
+
+```yml
+source: s3://my-source-channel
+destination: s3://my-destination-channel
+
+s3-config:
+  source:
+    endpoint-url: https://fsn1.your-objectstorage.com
+    force-path-style: false
+    region: US
+  destination:
+    endpoint-url: https://s3.eu-central-1.amazonaws.com
+    force-path-style: false
+    region: eu-central-1
+```
+
+See [pixi's documentation](https://pixi.sh/latest/deployment/s3/#s3-compatible-storage) for configuring S3-compatible storage like Cloudflare R2 or Hetzner Object Storage.

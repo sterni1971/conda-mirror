@@ -1,0 +1,9 @@
+source: bioconda
+destination: ./bioconda-fs-mirror
+
+exclude:
+  - license: GPL-3.0-or-later
+
+# override excludes
+include:
+  - name: asgal

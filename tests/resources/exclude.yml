@@ -1,0 +1,8 @@
+source: robostack
+destination: ./robostack-fs-mirror
+
+# include all except the following
+exclude:
+  - name: jupyter-ros
+    version: "==0.5.0"
+  - license: AGPL-3.0-or-later
