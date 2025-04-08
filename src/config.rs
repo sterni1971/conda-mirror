@@ -88,6 +88,22 @@ pub struct S3Credentials {
     pub session_token: Option<String>,
 }
 
+impl std::fmt::Debug for S3Credentials {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("S3Credentials")
+            .field("access_key_id", &"***")
+            .field("secret_access_key", &"***")
+            .field("session_token", &{
+                if self.session_token.is_some() {
+                    "Some(***)"
+                } else {
+                    "None"
+                }
+            })
+            .finish()
+    }
+}
+
 /* -------------------------------------------- YAML ------------------------------------------- */
 
 #[derive(Debug, Clone)]
@@ -178,7 +194,7 @@ pub enum MirrorMode {
     IncludeExclude(Vec<PackageConfig>, Vec<PackageConfig>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CondaMirrorConfig {
     pub source: NamedChannelOrUrl,
     pub destination: NamedChannelOrUrl,
@@ -188,33 +204,6 @@ pub struct CondaMirrorConfig {
     pub s3_config_destination: Option<S3Config>,
     // pub s3_credentials_source: Option<S3Credentials>,
     pub s3_credentials_destination: Option<S3Credentials>,
-}
-
-impl std::fmt::Debug for CondaMirrorConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CondaMirrorConfig")
-            .field("source", &self.source)
-            .field("destination", &self.destination)
-            .field("subdirs", &self.subdirs)
-            .field("mode", &self.mode)
-            .field("s3_config_source", &self.s3_config_source)
-            .field("s3_config_destination", &self.s3_config_destination)
-            // .field("s3_credentials_source", &{
-            //     if self.s3_credentials_source.is_some() {
-            //         "Some(***)"
-            //     } else {
-            //         "None"
-            //     }
-            // })
-            .field("s3_credentials_destination", &{
-                if self.s3_credentials_destination.is_some() {
-                    "Some(***)"
-                } else {
-                    "None"
-                }
-            })
-            .finish()
-    }
 }
 
 impl CondaMirrorConfig {
