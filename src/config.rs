@@ -1,9 +1,9 @@
 use miette::IntoDiagnostic;
 use rattler_conda_types::{
     ChannelConfig, MatchSpec, Matches, NamedChannelOrUrl, NamelessMatchSpec, PackageRecord,
-    Platform, VersionSpec,
+    Platform,
 };
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 use std::{env::current_dir, path::PathBuf, str::FromStr};
 
 use clap::Parser;
