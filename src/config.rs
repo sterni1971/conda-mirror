@@ -1,6 +1,9 @@
 use miette::IntoDiagnostic;
-use rattler_conda_types::{ChannelConfig, NamedChannelOrUrl, PackageRecord, Platform, VersionSpec};
-use serde::{Deserialize, Deserializer};
+use rattler_conda_types::{
+    ChannelConfig, MatchSpec, Matches, NamedChannelOrUrl, NamelessMatchSpec, PackageRecord,
+    Platform, VersionSpec,
+};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::{env::current_dir, path::PathBuf, str::FromStr};
 
 use clap::Parser;
@@ -121,32 +124,64 @@ impl<'de> Deserialize<'de> for GlobPattern {
     }
 }
 
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct NamelessMatchSpecWrapper(NamelessMatchSpec);
+
+impl<'de> Deserialize<'de> for NamelessMatchSpecWrapper {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let wrapper = NamelessMatchSpecWrapper(s.parse().map_err(serde::de::Error::custom)?);
+        tracing::trace!("Deserialized NamelessMatchSpec: {wrapper:?}");
+        Ok(wrapper)
+    }
+}
+
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct MatchSpecWrapper(MatchSpec);
+
+impl<'de> Deserialize<'de> for MatchSpecWrapper {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let wrapper = MatchSpecWrapper(s.parse().map_err(serde::de::Error::custom)?);
+        tracing::trace!("Deserialized MatchSpec: {wrapper:?}");
+        Ok(wrapper)
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum PackageConfig {
+    #[serde(rename_all = "kebab-case")]
     PackageGlob {
-        name: GlobPattern,
-        version: Option<VersionSpec>,
+        name_glob: GlobPattern,
+        matchspec: Option<NamelessMatchSpecWrapper>,
     },
-    License {
-        license: String,
-    },
+    MatchSpec(MatchSpecWrapper),
 }
 
 impl PackageConfig {
     pub(crate) fn matches(&self, package_record: PackageRecord) -> bool {
         match self {
-            PackageConfig::PackageGlob { name, version } => {
-                let name_match = name.0.matches(package_record.name.as_normalized());
-                if let Some(version) = version {
-                    name_match && version.matches(package_record.version.as_ref())
+            PackageConfig::PackageGlob {
+                name_glob,
+                matchspec,
+            } => {
+                let name_match = name_glob.0.matches(package_record.name.as_normalized());
+                if let Some(matchspec) = matchspec {
+                    name_match && matchspec.0.matches(&package_record)
                 } else {
                     name_match
                 }
             }
-            PackageConfig::License { license } => package_record
-                .license
-                .is_some_and(|l| l.as_str() == license),
+            PackageConfig::MatchSpec(matchspec) => matchspec.0.matches(&package_record),
         }
     }
 }

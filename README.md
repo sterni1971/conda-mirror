@@ -103,9 +103,11 @@ source: conda-forge
 destination: ./my-channel
 
 exclude:
-  - name: jupyter
-    version: ">=0.5.0" # optional
-  - license: AGPL-3.0-or-later
+  # you can use MatchSpecs here
+  - jupyter >=0.5.0
+  # you can also glob over names
+  - name-glob: '*'
+    matchspec: '[license=AGPL-3.0-or-later]'
 ```
 
 Only mirror whitelisted packages:
@@ -115,7 +117,7 @@ source: conda-forge
 destination: ./my-channel
 
 include:
-  - name: jupyter* # you can use globs here
+  - name-glob: jupyter*
 ```
 
 Exclude all packages defined in `exclude`, override this behavior by specifying overrides in `include`:
@@ -127,7 +129,7 @@ destination: ./my-channel
 include:
   - name: jupyter-ai
 exclude:
-  - name: jupyter* # you can use globs here
+  - name-glob: jupyter*
 ```
 
 Only mirror certain subdirs:

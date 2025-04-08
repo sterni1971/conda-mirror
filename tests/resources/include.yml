@@ -8,5 +8,5 @@ subdirs:
 
 # include none except these
 include:
-  - name: gazebo
-    version: ">=11"
+  - name-glob: jupyter*
+    matchspec: ">=11"
