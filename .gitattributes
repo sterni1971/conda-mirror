@@ -1,1 +1,2 @@
-conda_mirror/_version.py export-subst
+# GitHub syntax highlighting
+pixi.lock mergy=binary linguist-language=YAML

@@ -1,0 +1,12 @@
+source: robostack
+destination: ./robostack-fs-mirror
+subdirs:
+  - linux-64
+  - osx-arm64
+  - noarch
+  - win-64
+
+# include none except these
+include:
+  - name-glob: jupyter*
+    matchspec: ">=11"

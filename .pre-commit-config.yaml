@@ -1,33 +1,54 @@
+exclude: ^(target/|\.pixi/)
 repos:
-  - repo: https://github.com/Quantco/pre-commit-mirrors-black
-    rev: 23.1.0
+  - repo: local
     hooks:
-      - id: black-conda
-        args:
-          - --safe
-          - --target-version=py38
-  - repo: https://github.com/Quantco/pre-commit-mirrors-flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8-conda
-  - repo: https://github.com/Quantco/pre-commit-mirrors-isort
-    rev: 5.12.0
-    hooks:
-      - id: isort-conda
-        additional_dependencies: [-c, conda-forge, toml=0.10.2]
-  #- repo: https://github.com/Quantco/pre-commit-mirrors-mypy
-  #  rev: "0.991"
-  #  hooks:
-  #    - id: mypy-conda
-  #      additional_dependencies: [-c, conda-forge, types-setuptools]
-  - repo: https://github.com/Quantco/pre-commit-mirrors-pyupgrade
-    rev: 3.3.1
-    hooks:
-      - id: pyupgrade-conda
-        args:
-          - --py38
-  - repo: https://github.com/Quantco/pre-commit-mirrors-prettier
-    rev: 2.7.1
-    hooks:
-      - id: prettier-conda
-        files: "\\.md$"
+      # prettier
+      - id: prettier
+        name: prettier
+        entry: pixi run -e lint prettier --write --list-different --ignore-unknown
+        language: system
+        types: [text]
+        files: \.(md|yml|yaml)$
+      # pre-commit-hooks
+      - id: trailing-whitespace-fixer
+        name: trailing-whitespace-fixer
+        entry: pixi run -e lint trailing-whitespace-fixer
+        language: system
+        types: [text]
+      - id: end-of-file-fixer
+        name: end-of-file-fixer
+        entry: pixi run -e lint end-of-file-fixer
+        language: system
+        types: [text]
+      - id: check-merge-conflict
+        name: check-merge-conflict
+        entry: pixi run -e lint check-merge-conflict --assume-in-merge
+        language: system
+        types: [text]
+      # typos
+      - id: typos
+        name: typos
+        entry: pixi run -e lint typos --force-exclude
+        language: system
+        types: [text]
+        require_serial: true
+      # cargo fmt and clippy
+      - id: cargo-fmt
+        name: cargo-fmt
+        entry: pixi run -e default cargo fmt --
+        language: system
+        require_serial: false
+        types: [rust]
+      - id: cargo-clippy
+        name: cargo-clippy
+        entry: pixi run -e default cargo clippy --all-targets --all-features --workspace -- -D warnings
+        pass_filenames: false
+        language: system
+        require_serial: false
+        types: [rust]
+      # taplo
+      - id: taplo
+        name: taplo
+        entry: pixi run -e lint taplo format
+        language: system
+        types: [toml]
