@@ -119,7 +119,7 @@ pub async fn mirror(config: CondaMirrorConfig) -> miette::Result<()> {
     let subdirs = get_subdirs(&config, client.clone()).await?;
     tracing::info!("Mirroring the following subdirs: {:?}", subdirs);
 
-    let max_parallel = 4;
+    let max_parallel = 10;
     let multi_progress = Arc::new(MultiProgress::new());
     let semaphore = Arc::new(Semaphore::new(max_parallel));
 
@@ -669,7 +669,7 @@ fn get_client(config: &CondaMirrorConfig) -> miette::Result<ClientWithMiddleware
     ));
 
     client_builder = client_builder.with(RetryTransientMiddleware::new_with_policy(
-        ExponentialBackoff::builder().build_with_max_retries(3),
+        ExponentialBackoff::builder().build_with_max_retries(12),
     ));
 
     let authenticated_client = client_builder.build();
