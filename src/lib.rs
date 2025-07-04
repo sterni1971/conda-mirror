@@ -594,7 +594,7 @@ fn get_client(config: &CondaMirrorConfig) -> miette::Result<ClientWithMiddleware
     let client = Client::builder()
         .pool_max_idle_per_host(20)
         .user_agent("conda-mirror")
-        .read_timeout(Duration::from_secs(30))
+        .read_timeout(Duration::from_secs(120))
         .build()
         .expect("failed to create reqwest Client");
     let mut client_builder = ClientBuilder::new(client.clone());
