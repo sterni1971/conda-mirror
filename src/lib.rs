@@ -445,6 +445,7 @@ async fn mirror_subdir<T: Configurator>(
         }
         let text = response.text().await.into_diagnostic()?;
         serde_json::from_str(&text).into_diagnostic()?
+        tracing::debug!("repodata response body: {}", text);
     };
     tracing::info!("Fetched repo data for subdir: {}", subdir);
 
